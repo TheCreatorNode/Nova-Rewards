@@ -14,6 +14,8 @@
   <a href="docs/security/README.md"><img src="https://img.shields.io/badge/security-audited-green" alt="Security Audited"></a>
 </p>
 
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/28a8b849-5be7-4c1c-a61f-05c5d685ffba" />
+
 
 ![Uploading image.png…]()
 
