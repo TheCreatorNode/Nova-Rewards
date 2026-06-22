@@ -1,47 +1,79 @@
-require('dotenv').config();
-const { validateEnv } = require('./middleware/validateEnv');
-
-// Validate all required env vars before anything else — halts if any are missing
-validateEnv();
-
 const express = require('express');
 const cors = require('cors');
+const { pool, getPoolStatus } = require('./db');
+const campaignRoutes = require('./routes/campaignRoutes');
+const transactionRoutes = require('./routes/transactionRoutes');
+const healthCheck = require('./health/healthCheck');
 
 const app = express();
+const PORT = process.env.PORT || 3000;
 
-// Configure CORS based on environment
-const corsOptions = process.env.NODE_ENV === 'production' && process.env.ALLOWED_ORIGIN
-  ? { origin: process.env.ALLOWED_ORIGIN }
-  : {}; // Open CORS for development
-
-app.use(cors(corsOptions));
+// Middleware
+app.use(cors());
 app.use(express.json());
 
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ success: true, data: { status: 'ok' } });
+// Routes
+app.use('/api/campaigns', campaignRoutes);
+app.use('/api/transactions', transactionRoutes);
+
+// Health check endpoint
+app.get('/health', async (req, res) => {
+  try {
+    const health = await healthCheck.runAllChecks();
+    
+    // Return 200 if all critical services are ok, 503 otherwise
+    const statusCode = health.status === 'ok' ? 200 : 503;
+    res.status(statusCode).json(health);
+  } catch (error) {
+    console.error('[Health] Error running checks:', error);
+    res.status(503).json({
+      status: 'degraded',
+      error: error.message,
+      timestamp: new Date().toISOString(),
+    });
+  }
 });
 
-// Routes (wired in as they are implemented)
-app.use('/api/merchants', require('./routes/merchants'));
-app.use('/api/campaigns', require('./routes/campaigns'));
-app.use('/api/rewards', require('./routes/rewards'));
-app.use('/api/transactions', require('./routes/transactions'));
-app.use('/api/trustline', require('./routes/trustline'));
+// Pool status endpoint (for monitoring)
+app.get('/pool-status', (req, res) => {
+  try {
+    const status = getPoolStatus();
+    res.json({
+      ...status,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get pool status' });
+  }
+});
 
-// Global error handler — returns consistent error envelope
-app.use((err, req, res, _next) => {
-  console.error(err);
-  res.status(err.status || 500).json({
-    success: false,
-    error: err.code || 'internal_error',
-    message: err.message || 'An unexpected error occurred',
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('[Server] Unhandled error:', err);
+  res.status(500).json({ 
+    error: 'Internal server error',
+    timestamp: new Date().toISOString(),
   });
 });
 
-const PORT = process.env.PORT || 3001;
+// Start server
 app.listen(PORT, () => {
-  console.log(`NovaRewards backend running on port ${PORT}`);
+  console.log(`✅ Server running on port ${PORT}`);
+  console.log(`✅ Health check: http://localhost:${PORT}/health`);
+  console.log(`✅ Pool status: http://localhost:${PORT}/pool-status`);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('Received SIGTERM, closing pool...');
+  await pool.end();
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  console.log('Received SIGINT, closing pool...');
+  await pool.end();
+  process.exit(0);
 });
 
 module.exports = app;
