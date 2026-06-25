@@ -1,3 +1,4 @@
+const logger = require('./lib/logger');
 const { query, pool } = require('./index');
 const { client: redisClient } = require('../lib/redis');
 
@@ -15,7 +16,7 @@ async function invalidateLeaderboardCache(txType) {
   await Promise.all([
     redisClient.del('leaderboard:weekly'),
     redisClient.del('leaderboard:alltime'),
-  ]).catch((err) => console.error('[leaderboard] cache invalidation failed', err));
+  ]).catch((err) => logger.error('[leaderboard] cache invalidation failed', err));
 }
 
 function buildHistoryFilters({

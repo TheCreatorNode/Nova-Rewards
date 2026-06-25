@@ -1,3 +1,4 @@
+const logger = require('./lib/logger');
 const router = require('express').Router();
 const { authenticateMerchant } = require('../middleware/authenticateMerchant');
 const { getMerchantTotals } = require('../db/transactionRepository');
@@ -63,7 +64,7 @@ router.post('/record', async (req, res, next) => {
       const txRecord = await circuitBreakerService.execute(
         'horizon_transaction',
         () => server.transactions().transaction(txHash).call(),
-        () => { console.warn(`[Horizon] Circuit breaker fallback for txHash=${txHash}`); return { ledger_attr: null }; },
+        () => { logger.warn(`[Horizon] Circuit breaker fallback for txHash=${txHash}`); return { ledger_attr: null }; },
         { retries: 3 }
       );
       stellarLedger = txRecord.ledger_attr || txRecord.ledger;
