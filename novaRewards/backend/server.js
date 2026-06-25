@@ -170,6 +170,7 @@ function buildApiRouter() {
   router.use("/webhooks", require("./routes/webhooks"));
   router.use("/merchants/:id/api-keys", require("./routes/merchantApiKeys"));
   router.use("/governance", require("./routes/governance"));
+  router.use("/jobs", require("./routes/jobs"));
 
   return router;
 }
@@ -210,6 +211,8 @@ if (require.main === module) {
     require("./jobs/webhookHandler");
     // Initialize Reward Issuance Worker
     require("./jobs/rewardIssuanceWorker");
+    // Initialize Reward Distribution Worker (bulk campaign distribution)
+    require("./jobs/rewardDistributionWorker");
     logger.info(`NovaRewards backend running on port ${PORT}`);
     console.log(`✅ Health check: http://localhost:${PORT}/health`);
     console.log(`✅ Detailed health: http://localhost:${PORT}/health/detailed`);
