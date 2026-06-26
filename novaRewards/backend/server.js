@@ -90,7 +90,7 @@ app.get('/health/detailed', async (req, res) => {
     const statusCode = health.status === 'ok' ? 200 : 503;
     res.status(statusCode).json(health);
   } catch (error) {
-    console.error('[Health] Error running checks:', error);
+    logger.error('[Health] Error running checks:', error);
     res.status(503).json({
       status: 'degraded',
       error: error.message,
@@ -214,9 +214,9 @@ if (require.main === module) {
     // Initialize Reward Distribution Worker (bulk campaign distribution)
     require("./jobs/rewardDistributionWorker");
     logger.info(`NovaRewards backend running on port ${PORT}`);
-    console.log(`✅ Health check: http://localhost:${PORT}/health`);
-    console.log(`✅ Detailed health: http://localhost:${PORT}/health/detailed`);
-    console.log(`✅ Pool status: http://localhost:${PORT}/pool-status`);
+    logger.info(`✅ Health check: http://localhost:${PORT}/health`);
+    logger.info(`✅ Detailed health: http://localhost:${PORT}/health/detailed`);
+    logger.info(`✅ Pool status: http://localhost:${PORT}/pool-status`);
   });
 }
 
